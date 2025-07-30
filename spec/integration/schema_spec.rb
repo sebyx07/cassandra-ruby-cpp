@@ -191,7 +191,10 @@ RSpec.describe 'Schema Management Integration', type: :integration do
             t.timestamp :created_at, default: 'now()'
           end
           
-          create_index :migration_test_table, :name
+          # Ensure table exists before creating index
+          if table_exists?(:migration_test_table)
+            create_index :migration_test_table, :name
+          end
         end
 
         def down

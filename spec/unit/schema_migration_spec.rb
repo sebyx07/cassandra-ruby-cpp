@@ -8,7 +8,8 @@ RSpec.describe CassandraCpp::Schema::Migration do
   let(:migration) { described_class.new(mock_session) }
 
   before do
-    allow(CassandraCpp::Schema::Manager).to receive(:new).with(mock_session).and_return(mock_schema)
+    allow(mock_session).to receive(:keyspace).and_return('test_keyspace')
+    allow(CassandraCpp::Schema::Manager).to receive(:new).with(mock_session, 'test_keyspace').and_return(mock_schema)
   end
 
   describe '#initialize' do
@@ -162,7 +163,8 @@ RSpec.describe CassandraCpp::Schema::MigrationRunner do
   let(:migration_runner) { described_class.new(mock_session) }
 
   before do
-    allow(CassandraCpp::Schema::Manager).to receive(:new).with(mock_session).and_return(mock_schema)
+    allow(mock_session).to receive(:keyspace).and_return('test_keyspace')
+    allow(CassandraCpp::Schema::Manager).to receive(:new).with(mock_session, 'test_keyspace').and_return(mock_schema)
     allow(mock_schema).to receive(:table_exists?).with('schema_migrations').and_return(true)
   end
 

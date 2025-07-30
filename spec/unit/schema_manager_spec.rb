@@ -28,7 +28,7 @@ RSpec.describe CassandraCpp::Schema::Manager do
 
     it 'returns list of table names' do
       expect(mock_session).to receive(:execute)
-        .with(<<~CQL, [keyspace])
+        .with(<<~CQL, keyspace)
           SELECT table_name 
           FROM system_schema.tables 
           WHERE keyspace_name = ?
@@ -57,7 +57,7 @@ RSpec.describe CassandraCpp::Schema::Manager do
 
     before do
       allow(mock_session).to receive(:execute)
-        .with(<<~CQL, [keyspace, table_name])
+        .with(<<~CQL, keyspace, table_name)
           SELECT column_name, type, kind
           FROM system_schema.columns 
           WHERE keyspace_name = ? AND table_name = ?
@@ -65,25 +65,25 @@ RSpec.describe CassandraCpp::Schema::Manager do
         .and_return(columns_result)
       
       allow(mock_session).to receive(:execute)
-        .with(<<~CQL, [keyspace, table_name])
+        .with(<<~CQL, keyspace, table_name)
           SELECT column_name
           FROM system_schema.columns 
           WHERE keyspace_name = ? AND table_name = ? AND kind = 'partition_key'
-          ORDER BY position
+          ALLOW FILTERING
         CQL
         .and_return(partition_keys_result)
       
       allow(mock_session).to receive(:execute)
-        .with(<<~CQL, [keyspace, table_name])
+        .with(<<~CQL, keyspace, table_name)
           SELECT column_name
           FROM system_schema.columns 
           WHERE keyspace_name = ? AND table_name = ? AND kind = 'clustering'
-          ORDER BY position
+          ALLOW FILTERING
         CQL
         .and_return(clustering_keys_result)
       
       allow(mock_session).to receive(:execute)
-        .with(<<~CQL, [keyspace, table_name])
+        .with(<<~CQL, keyspace, table_name)
           SELECT index_name, kind, options
           FROM system_schema.indexes 
           WHERE keyspace_name = ? AND table_name = ?
@@ -120,7 +120,7 @@ RSpec.describe CassandraCpp::Schema::Manager do
 
     it 'returns column definitions' do
       expect(mock_session).to receive(:execute)
-        .with(<<~CQL, [keyspace, table_name])
+        .with(<<~CQL, keyspace, table_name)
           SELECT column_name, type, kind
           FROM system_schema.columns 
           WHERE keyspace_name = ? AND table_name = ?
@@ -230,11 +230,11 @@ RSpec.describe CassandraCpp::Schema::Manager do
 
     it 'returns partition key columns in order' do
       expect(mock_session).to receive(:execute)
-        .with(<<~CQL, [keyspace, table_name])
+        .with(<<~CQL, keyspace, table_name)
           SELECT column_name
           FROM system_schema.columns 
           WHERE keyspace_name = ? AND table_name = ? AND kind = 'partition_key'
-          ORDER BY position
+          ALLOW FILTERING
         CQL
         .and_return(mock_result)
 
@@ -254,11 +254,11 @@ RSpec.describe CassandraCpp::Schema::Manager do
 
     it 'returns clustering key columns in order' do
       expect(mock_session).to receive(:execute)
-        .with(<<~CQL, [keyspace, table_name])
+        .with(<<~CQL, keyspace, table_name)
           SELECT column_name
           FROM system_schema.columns 
           WHERE keyspace_name = ? AND table_name = ? AND kind = 'clustering'
-          ORDER BY position
+          ALLOW FILTERING
         CQL
         .and_return(mock_result)
 
@@ -278,7 +278,7 @@ RSpec.describe CassandraCpp::Schema::Manager do
 
     it 'returns index information' do
       expect(mock_session).to receive(:execute)
-        .with(<<~CQL, [keyspace, table_name])
+        .with(<<~CQL, keyspace, table_name)
           SELECT index_name, kind, options
           FROM system_schema.indexes 
           WHERE keyspace_name = ? AND table_name = ?

@@ -109,23 +109,29 @@ RSpec.describe 'Native Extension Integration', type: :integration do
   end
 
   describe 'data type handling' do
-    before(:all) do
-      skip_unless_cassandra_available
-      create_test_keyspace('native_test')
-    end
-
-    after(:all) do
-      skip_unless_cassandra_available
-      drop_test_keyspace('native_test') rescue nil
-    end
-
     it 'handles various data types correctly' do
       skip_unless_cassandra_available
       
-      with_test_session('native_test') do |session|
-        # Create test table
+      with_test_session('cassandra_cpp_test') do |session|
+        # Ensure keyspace exists
+        begin
+          session.execute("USE cassandra_cpp_test")
+        rescue
+          # Create keyspace if it doesn't exist
+          cluster = create_test_cluster
+          temp_session = cluster.connect
+          temp_session.execute("CREATE KEYSPACE IF NOT EXISTS cassandra_cpp_test WITH REPLICATION = {'class': 'SimpleStrategy', 'replication_factor': 1}")
+          temp_session.close
+          cluster.close
+          
+          # Retry the USE statement
+          session.execute("USE cassandra_cpp_test")
+        end
+        
+        # Create test table with unique name
+        table_name = 'native_extension_type_test'
         session.execute(<<~CQL)
-          CREATE TABLE IF NOT EXISTS type_test (
+          CREATE TABLE IF NOT EXISTS #{table_name} (
             id UUID PRIMARY KEY,
             text_val TEXT,
             int_val INT,
@@ -136,12 +142,12 @@ RSpec.describe 'Native Extension Integration', type: :integration do
 
         # Insert test data
         session.execute(<<~CQL)
-          INSERT INTO type_test (id, text_val, int_val, bigint_val, bool_val)
+          INSERT INTO #{table_name} (id, text_val, int_val, bigint_val, bool_val)
           VALUES (uuid(), 'test_string', 42, 1234567890, true)
         CQL
 
         # Query and verify types
-        result = session.execute('SELECT * FROM type_test LIMIT 1')
+        result = session.execute("SELECT * FROM #{table_name} LIMIT 1")
         row = result.first
 
         expect(row['text_val']).to be_a(String)
