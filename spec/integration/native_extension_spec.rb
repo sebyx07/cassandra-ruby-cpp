@@ -24,9 +24,12 @@ RSpec.describe 'Native Extension Integration', type: :integration do
     it 'creates native cluster and session' do
       skip_unless_cassandra_available
       
+      test_hosts = ENV['CASSANDRA_HOSTS']&.split(',') || ['localhost']
+      test_port = ENV['CASSANDRA_PORT']&.to_i || 9042
+      
       cluster = CassandraCpp::NativeCluster.new({
-        hosts: 'localhost',
-        port: 9042
+        hosts: test_hosts.join(','),
+        port: test_port
       })
       
       session = cluster.connect
@@ -42,9 +45,12 @@ RSpec.describe 'Native Extension Integration', type: :integration do
     it 'handles native errors properly' do
       skip_unless_cassandra_available
       
+      test_hosts = ENV['CASSANDRA_HOSTS']&.split(',') || ['localhost']
+      test_port = ENV['CASSANDRA_PORT']&.to_i || 9042
+      
       cluster = CassandraCpp::NativeCluster.new({
-        hosts: 'localhost',
-        port: 9042
+        hosts: test_hosts.join(','),
+        port: test_port
       })
       
       session = cluster.connect

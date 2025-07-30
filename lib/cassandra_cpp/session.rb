@@ -34,6 +34,22 @@ module CassandraCpp
       end
     end
 
+    # Create a new batch for atomic operations
+    # @param type [Symbol] Batch type (:logged, :unlogged, :counter)
+    # @return [Batch] New batch instance
+    def batch(type = :logged)
+      batch_type = case type
+                   when :logged then CassandraCpp::BATCH_TYPE_LOGGED
+                   when :unlogged then CassandraCpp::BATCH_TYPE_UNLOGGED
+                   when :counter then CassandraCpp::BATCH_TYPE_COUNTER
+                   else
+                     raise ArgumentError, "Unknown batch type: #{type}"
+                   end
+      
+      native_batch = @native_session.batch(batch_type)
+      Batch.new(native_batch, self)
+    end
+
     public
 
     def execute_async(query, *params)

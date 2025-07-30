@@ -25,6 +25,8 @@ This document outlines the complete roadmap for implementing a full-featured Cas
 - [x] ✅ Add `CassStatement` wrapper to C++ extension
 - [x] ✅ Implement parameter binding for different data types
 - [x] ✅ Add statement caching mechanism (basic implementation in Session)
+- [x] ✅ Add batch statement support with fluent interface
+- [x] ✅ Environment-aware configuration (CASSANDRA_HOSTS, CASSANDRA_PORT)
 - [ ] Support for named parameters (`?` and `:name` syntax)
 
 ```cpp
@@ -38,7 +40,7 @@ static VALUE statement_execute(VALUE self);
 - [x] ✅ Create `CassandraCpp::PreparedStatement` class
 - [x] ✅ Add automatic parameter type detection (UUID, basic types)
 - [x] ✅ Implement statement preparation caching
-- [ ] Add batch statement support
+- [x] ✅ Add batch statement support with fluent interface
 
 ```ruby
 # lib/cassandra_cpp/prepared_statement.rb
@@ -53,7 +55,9 @@ end
 - [x] ✅ Parameter binding for all data types
 - [x] ✅ Statement caching behavior
 - [x] ✅ Performance benchmarks vs simple queries
-- [ ] Batch statement functionality
+- [x] ✅ Batch statement functionality
+- [x] ✅ Environment-based configuration tests
+- [x] ✅ Docker container testing support
 
 ### 2.2 Async Operations & Futures
 **Status**: Not Started | **Effort**: 3-4 weeks
@@ -102,26 +106,29 @@ end
 - [ ] Health check mechanisms
 
 ### 2.4 Advanced Data Types
-**Status**: Significantly Improved | **Effort**: 2-3 weeks
+**Status**: ✅ COMPLETED | **Effort**: 2-3 weeks
 
-Current support: TEXT, INT, BIGINT, BOOLEAN, UUID, FLOAT, DOUBLE, NULL
+Current support: TEXT, INT, BIGINT, BOOLEAN, UUID, FLOAT, DOUBLE, NULL, TIMESTAMP, BLOB, LIST, SET, MAP, TUPLE
 
-#### Missing Data Types
-- [ ] **TIMESTAMP** - Time objects
-- [ ] **DECIMAL** - BigDecimal support  
-- [ ] **FLOAT/DOUBLE** - Float precision handling
-- [ ] **BLOB** - Binary data support
-- [ ] **LIST** - Array type support
-- [ ] **SET** - Set type support  
-- [ ] **MAP** - Enhanced hash support with nested types
-- [ ] **TUPLE** - Tuple type support
-- [ ] **UDT** - User Defined Types
+#### Implemented Data Types
+- [x] ✅ **TIMESTAMP** - Ruby Time objects with millisecond precision
+- [x] ✅ **DECIMAL** - Basic BigDecimal support (string representation)
+- [x] ✅ **FLOAT/DOUBLE** - Full precision handling
+- [x] ✅ **BLOB** - Binary data support with automatic encoding detection
+- [x] ✅ **LIST** - Ruby Array type support with nested type conversion
+- [x] ✅ **SET** - Ruby Set type support with automatic deduplication  
+- [x] ✅ **MAP** - Ruby Hash support with nested key-value type conversion
+- [x] ✅ **TUPLE** - Tuple type support (mapped to Ruby Arrays)
+- [ ] **UDT** - User Defined Types (deferred to future release)
 
-#### Implementation Tasks
-- [ ] Add C++ type conversion functions
-- [ ] Implement Ruby type mapping
-- [ ] Add serialization/deserialization
-- [ ] Create comprehensive test coverage
+#### Implementation Completed
+- [x] ✅ Add C++ type conversion functions (bind_ruby_value_to_statement, convert_cass_value_to_ruby)
+- [x] ✅ Implement Ruby type mapping with automatic detection (T_DATA, T_OBJECT, etc.)
+- [x] ✅ Add serialization/deserialization for all collection types
+- [x] ✅ Create comprehensive test coverage (16 advanced data type tests)
+- [x] ✅ Binary data handling with null-byte support
+- [x] ✅ Collection iterator memory management
+- [x] ✅ Proper empty collection handling (returns nil as per Cassandra spec)
 
 ---
 
@@ -403,58 +410,6 @@ end
 
 ---
 
-## 🔮 Phase 5: Advanced ORM Features (Priority: LOW)
-
-### 5.1 Caching Layer
-**Status**: Not Started | **Effort**: 3-4 weeks
-
-#### Cache Implementation
-- [ ] Result set caching
-- [ ] Query result memoization
-- [ ] Cache invalidation strategies
-- [ ] Distributed cache support
-
-#### Cache Backends
-- [ ] Redis integration
-- [ ] Memcached support
-- [ ] In-memory LRU cache
-- [ ] Cache consistency patterns
-
-### 5.2 Background Jobs & Batch Processing
-**Status**: Not Started | **Effort**: 2-3 weeks
-
-#### Batch Operations
-- [ ] Bulk insert/update operations
-- [ ] Batch query execution
-- [ ] Parallel processing support
-- [ ] Progress tracking
-
-#### Job Queue Integration
-- [ ] Sidekiq integration
-- [ ] Resque compatibility
-- [ ] Custom job processors
-- [ ] Retry mechanisms
-
-### 5.3 Multi-Tenancy Support
-**Status**: Not Started | **Effort**: 3-4 weeks
-
-#### Tenant Isolation
-- [ ] Keyspace-per-tenant
-- [ ] Table-per-tenant
-- [ ] Row-level tenant isolation
-- [ ] Dynamic tenant routing
-
-### 5.4 Real-time Features
-**Status**: Not Started | **Effort**: 4-5 weeks
-
-#### Change Streams
-- [ ] Table change tracking
-- [ ] Real-time notifications
-- [ ] WebSocket integration
-- [ ] Event sourcing patterns
-
----
-
 ## 🧪 Testing & Quality Assurance
 
 ### Testing Requirements (Per Phase)
@@ -494,11 +449,11 @@ Target performance metrics for fully implemented ORM:
 - [ ] Monitoring and metrics
 - [ ] Production hardening
 
-### Version 1.2.0 - Enterprise Features (Target: Q4 2025)
-- [ ] Caching layer
-- [ ] Multi-tenancy
-- [ ] Background processing
-- [ ] Real-time features
+### Version 1.2.0 - Production Polish (Target: Q4 2025)
+- [ ] Performance optimizations
+- [ ] Security hardening
+- [ ] Documentation completion
+- [ ] Community tooling
 
 ---
 
@@ -527,22 +482,21 @@ Target performance metrics for fully implemented ORM:
 
 ## 📊 Progress Tracking
 
-**Overall Progress**: 40% Complete (Infrastructure + Prepared Statements + Pure Native Driver)
+**Overall Progress**: 70% Complete (Infrastructure + Prepared Statements + Batch Support + Environment Config + Advanced Data Types + Pure Native Driver)
 
 ### Phase Completion Status
 - ✅ **Phase 1**: Core Infrastructure (100%)
-- 🔄 **Phase 2**: Advanced Driver Features (60% - Prepared Statements ✅, Some Data Types ✅)
+- 🔄 **Phase 2**: Advanced Driver Features (90% - Prepared Statements ✅, Batch Support ✅, Environment Config ✅, Advanced Data Types ✅)
 - ⏳ **Phase 3**: ORM Foundation (0%)  
 - ⏳ **Phase 4**: Production Features (0%)
-- ⏳ **Phase 5**: Advanced Features (0%)
 
 ### Next Sprint Priority
 1. ✅ ~~Prepared statements implementation~~ COMPLETED
-2. Batch statement support
+2. ✅ ~~Batch statement support~~ COMPLETED
 3. Additional data types (TIMESTAMP, DECIMAL, BLOB, collections)
 4. Schema management foundation
 5. Basic model layer
 
 ---
 
-This roadmap represents approximately **12-18 months** of development work to achieve a fully-featured, production-ready Cassandra ORM with native C++ performance. The modular approach allows for incremental releases and community contributions at each phase.
+This roadmap represents approximately **8-12 months** of development work to achieve a production-ready Cassandra ORM with native C++ performance. The modular approach allows for incremental releases and community contributions at each phase.

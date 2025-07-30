@@ -4,31 +4,36 @@ require 'spec_helper'
 require 'securerandom'
 
 RSpec.describe 'Prepared Statements', type: :integration do
-  let(:cluster) { CassandraCpp::Cluster.new(hosts: 'cassandra-1,cassandra-2') }
+  include CassandraCppTestHelpers
+  
+  let(:cluster) { create_test_cluster }
   let(:session) { cluster.connect('cassandra_cpp_test') }
   
   before(:all) do
+    skip_unless_cassandra_available
+    
     # Ensure test table exists
-    cluster = CassandraCpp::Cluster.new(hosts: 'cassandra-1,cassandra-2')
-    session = cluster.connect('cassandra_cpp_test')
-    
-    session.execute(<<~CQL)
-      CREATE TABLE IF NOT EXISTS prepared_test (
-        id uuid PRIMARY KEY,
-        name text,
-        age int,
-        active boolean,
-        score double,
-        created_at timestamp
-      )
-    CQL
-    
-    session.close
+    with_test_session('cassandra_cpp_test') do |session|
+      session.execute(<<~CQL)
+        CREATE TABLE IF NOT EXISTS prepared_test (
+          id uuid PRIMARY KEY,
+          name text,
+          age int,
+          active boolean,
+          score double,
+          created_at timestamp
+        )
+      CQL
+    end
   end
   
   after do
-    session.execute('TRUNCATE prepared_test')
-    session.close
+    begin
+      session.execute('TRUNCATE prepared_test')
+    ensure
+      session.close
+      cluster.close
+    end
   end
   
   describe '#prepare' do
@@ -63,7 +68,7 @@ RSpec.describe 'Prepared Statements', type: :integration do
       it 'executes with string parameters' do
         statement = session.prepare('INSERT INTO prepared_test (id, name) VALUES (?, ?)')
         id = SecureRandom.uuid
-        result = statement.execute(id, 'John Doe')
+        statement.execute(id, 'John Doe')
         
         # Verify the insert
         rows = session.execute("SELECT * FROM prepared_test WHERE id = #{id}")
@@ -78,7 +83,7 @@ RSpec.describe 'Prepared Statements', type: :integration do
         CQL
         
         id = SecureRandom.uuid
-        result = statement.execute(id, 'Jane Smith', 30, true, 95.5)
+        statement.execute(id, 'Jane Smith', 30, true, 95.5)
         
         # Verify all fields
         rows = session.execute("SELECT * FROM prepared_test WHERE id = #{id}")
@@ -92,8 +97,8 @@ RSpec.describe 'Prepared Statements', type: :integration do
       it 'handles nil values' do
         statement = session.prepare('INSERT INTO prepared_test (id, name, age) VALUES (?, ?, ?)')
         id = SecureRandom.uuid
-        result = statement.execute(id, 'No Age', nil)
-        
+        statement.execute(id, 'No Age', nil)
+
         rows = session.execute("SELECT * FROM prepared_test WHERE id = #{id}")
         expect(rows.first['age']).to be_nil
       end

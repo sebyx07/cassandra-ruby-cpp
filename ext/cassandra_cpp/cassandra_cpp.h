@@ -12,6 +12,7 @@ extern VALUE rb_cCluster;
 extern VALUE rb_cSession;
 extern VALUE rb_cPreparedStatement;
 extern VALUE rb_cStatement;
+extern VALUE rb_cBatch;
 extern VALUE rb_eCassandraError;
 
 // Wrapper structures
@@ -37,20 +38,29 @@ typedef struct {
     VALUE prepared_ref;
 } statement_wrapper_t;
 
+typedef struct {
+    CassBatch* batch;
+    VALUE session_ref;
+} batch_wrapper_t;
+
 // Type information
 extern const rb_data_type_t cluster_type;
 extern const rb_data_type_t session_type;
 extern const rb_data_type_t prepared_statement_type;
 extern const rb_data_type_t statement_type;
+extern const rb_data_type_t batch_type;
 
 // Helper functions
 void raise_cassandra_error(CassFuture* future, const char* operation);
 VALUE convert_cass_value_to_ruby(const CassValue* value);
+CassError bind_ruby_value_to_statement(CassStatement* statement, size_t index, VALUE value);
+CassError bind_ruby_value_to_collection(CassCollection* collection, VALUE value);
 
 // Initialization functions
 void init_cluster();
 void init_session();
 void init_prepared_statement();
 void init_statement();
+void init_batch();
 
 #endif // CASSANDRA_CPP_H

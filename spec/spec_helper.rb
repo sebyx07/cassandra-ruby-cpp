@@ -51,7 +51,11 @@ RSpec.configure do |config|
     
     # Check Cassandra connectivity
     begin
-      cluster = CassandraCpp::Cluster.build(hosts: ['localhost'], port: 9042)
+      test_hosts = ENV['CASSANDRA_HOSTS']&.split(',') || ['localhost']
+      test_port = ENV['CASSANDRA_PORT']&.to_i || 9042
+      puts "📡 Testing connectivity to: #{test_hosts.join(', ')}:#{test_port}"
+      
+      cluster = CassandraCpp::Cluster.build(hosts: test_hosts, port: test_port)
       session = cluster.connect
       session.execute('SELECT release_version FROM system.local')
       session.close
@@ -81,7 +85,9 @@ RSpec.configure do |config|
   # Skip integration tests if Cassandra is not available
   config.before(:each, type: :integration) do
     begin
-      cluster = CassandraCpp::Cluster.build(hosts: ['localhost'], port: 9042)
+      test_hosts = ENV['CASSANDRA_HOSTS']&.split(',') || ['localhost']
+      test_port = ENV['CASSANDRA_PORT']&.to_i || 9042
+      cluster = CassandraCpp::Cluster.build(hosts: test_hosts, port: test_port)
       session = cluster.connect
       session.close
       cluster.close
@@ -94,9 +100,12 @@ end
 # Test helpers
 module CassandraCppTestHelpers
   def create_test_cluster(options = {})
+    test_hosts = ENV['CASSANDRA_HOSTS']&.split(',') || ['localhost']
+    test_port = ENV['CASSANDRA_PORT']&.to_i || 9042
+    
     default_options = {
-      hosts: ['localhost'],
-      port: 9042
+      hosts: test_hosts,
+      port: test_port
     }
     CassandraCpp::Cluster.build(default_options.merge(options))
   end

@@ -125,10 +125,37 @@ static VALUE session_prepare(VALUE self, VALUE query_str) {
     return prepared_obj;
 }
 
+static VALUE session_batch(int argc, VALUE* argv, VALUE self) {
+    VALUE batch_type_val;
+    rb_scan_args(argc, argv, "01", &batch_type_val);
+    
+    // Default to logged batch
+    CassBatchType cass_batch_type = CASS_BATCH_TYPE_LOGGED;
+    if (!NIL_P(batch_type_val)) {
+        cass_batch_type = (CassBatchType)NUM2INT(batch_type_val);
+    }
+    
+    // Create batch
+    CassBatch* batch = cass_batch_new(cass_batch_type);
+    
+    // Create batch wrapper
+    batch_wrapper_t* batch_wrapper = ALLOC(batch_wrapper_t);
+    batch_wrapper->batch = batch;
+    batch_wrapper->session_ref = self;
+    
+    VALUE batch_obj = TypedData_Wrap_Struct(rb_cBatch, &batch_type, batch_wrapper);
+    
+    // Keep reference to prevent session from being GC'd
+    rb_iv_set(batch_obj, "@session", self);
+    
+    return batch_obj;
+}
+
 void init_session() {
     rb_cSession = rb_define_class_under(rb_cCassandraCpp, "NativeSession", rb_cObject);
     rb_undef_alloc_func(rb_cSession);
     rb_define_method(rb_cSession, "execute", (VALUE(*)(...))session_execute, 1);
     rb_define_method(rb_cSession, "close", (VALUE(*)(...))session_close, 0);
     rb_define_method(rb_cSession, "prepare", (VALUE(*)(...))session_prepare, 1);
+    rb_define_method(rb_cSession, "batch", (VALUE(*)(...))session_batch, -1);
 }

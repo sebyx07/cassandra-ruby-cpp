@@ -31,9 +31,9 @@ static VALUE cluster_new(VALUE klass, VALUE options) {
     wrapper->connect_future = NULL;
     wrapper->session = NULL;
     
-    // Set default contact points
-    cass_cluster_set_contact_points(wrapper->cluster, "127.0.0.1");
-    cass_cluster_set_port(wrapper->cluster, 9042);
+    // Set defaults
+    const char* default_hosts = "127.0.0.1";  // Will be overridden by options
+    int default_port = 9042;
     
     // Configure options if provided
     if (!NIL_P(options)) {
@@ -43,12 +43,16 @@ static VALUE cluster_new(VALUE klass, VALUE options) {
         if (!NIL_P(hosts)) {
             const char* hosts_str = StringValueCStr(hosts);
             cass_cluster_set_contact_points(wrapper->cluster, hosts_str);
+        } else {
+            cass_cluster_set_contact_points(wrapper->cluster, default_hosts);
         }
         
         VALUE port = rb_hash_aref(options, ID2SYM(rb_intern("port")));
         if (!NIL_P(port)) {
             int port_num = NUM2INT(port);
             cass_cluster_set_port(wrapper->cluster, port_num);
+        } else {
+            cass_cluster_set_port(wrapper->cluster, default_port);
         }
         
         VALUE consistency = rb_hash_aref(options, ID2SYM(rb_intern("consistency")));
@@ -56,6 +60,10 @@ static VALUE cluster_new(VALUE klass, VALUE options) {
             int consistency_level = NUM2INT(consistency);
             cass_cluster_set_consistency(wrapper->cluster, (CassConsistency)consistency_level);
         }
+    } else {
+        // No options provided, use defaults
+        cass_cluster_set_contact_points(wrapper->cluster, default_hosts);
+        cass_cluster_set_port(wrapper->cluster, default_port);
     }
     
     return TypedData_Wrap_Struct(klass, &cluster_type, wrapper);

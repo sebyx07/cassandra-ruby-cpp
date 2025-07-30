@@ -25,6 +25,7 @@ module CassandraCpp
   autoload :Result, File.expand_path('cassandra_cpp/result', __dir__)
   autoload :PreparedStatement, File.expand_path('cassandra_cpp/prepared_statement', __dir__)
   autoload :Statement, File.expand_path('cassandra_cpp/statement', __dir__)
+  autoload :Batch, File.expand_path('cassandra_cpp/batch', __dir__)
   autoload :Uuid, File.expand_path('cassandra_cpp/uuid', __dir__)
   autoload :Model, File.expand_path('cassandra_cpp/model', __dir__)
 

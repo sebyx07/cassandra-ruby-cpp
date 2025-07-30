@@ -61,9 +61,12 @@ module CassandraCpp
     private
 
     def default_config
+      default_hosts = ENV['CASSANDRA_HOSTS']&.split(',') || ['127.0.0.1']
+      default_port = ENV['CASSANDRA_PORT']&.to_i || 9042
+      
       {
-        hosts: ['127.0.0.1'],
-        port: 9042,
+        hosts: default_hosts,
+        port: default_port,
         keyspace: nil,
         username: nil,
         password: nil,

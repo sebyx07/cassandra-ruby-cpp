@@ -13,7 +13,6 @@ tmp/
 *.gem
 .bundle/
 vendor/bundle/
-Gemfile.lock
 .ruby-version
 .ruby-gemset
 

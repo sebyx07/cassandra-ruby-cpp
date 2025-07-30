@@ -13,6 +13,7 @@ extern "C" void Init_cassandra_cpp() {
     init_session();
     init_prepared_statement();
     init_statement();
+    init_batch();
     
     // Constants for consistency levels
     rb_define_const(rb_cCassandraCpp, "CONSISTENCY_ANY", INT2NUM(CASS_CONSISTENCY_ANY));
@@ -26,4 +27,9 @@ extern "C" void Init_cassandra_cpp() {
     rb_define_const(rb_cCassandraCpp, "CONSISTENCY_SERIAL", INT2NUM(CASS_CONSISTENCY_SERIAL));
     rb_define_const(rb_cCassandraCpp, "CONSISTENCY_LOCAL_SERIAL", INT2NUM(CASS_CONSISTENCY_LOCAL_SERIAL));
     rb_define_const(rb_cCassandraCpp, "CONSISTENCY_LOCAL_ONE", INT2NUM(CASS_CONSISTENCY_LOCAL_ONE));
+    
+    // Constants for batch types
+    rb_define_const(rb_cCassandraCpp, "BATCH_TYPE_LOGGED", INT2NUM(CASS_BATCH_TYPE_LOGGED));
+    rb_define_const(rb_cCassandraCpp, "BATCH_TYPE_UNLOGGED", INT2NUM(CASS_BATCH_TYPE_UNLOGGED));
+    rb_define_const(rb_cCassandraCpp, "BATCH_TYPE_COUNTER", INT2NUM(CASS_BATCH_TYPE_COUNTER));
 }

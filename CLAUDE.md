@@ -36,9 +36,11 @@ docker-compose --profile monitoring up -d
 ```
 
 **Environment Variables:**
+- `CASSANDRA_HOSTS`: Comma-separated list of Cassandra hosts (default: `localhost`)
+- `CASSANDRA_PORT`: Cassandra port (default: `9042`)
 - Development: Uses `cassandra_cpp_development` keyspace
 - Test: Uses `cassandra_cpp_test` keyspace  
-- Hosts: `cassandra-1,cassandra-2` in Docker, `localhost` for local
+- Container setup: `CASSANDRA_HOSTS=cassandra-1,cassandra-2`
 
 ## Core Development Commands
 
@@ -67,6 +69,10 @@ COVERAGE=true bundle exec rspec
 
 # Parallel execution
 bundle exec parallel_rspec spec/
+
+# Run tests in Docker container (with Cassandra available)
+docker exec cassandra-cpp-dev bash -c "cd /workspace && bundle exec rspec"
+docker exec cassandra-cpp-dev bash -c "cd /workspace && bundle exec rspec spec/unit/batch_spec.rb"
 ```
 
 **Code Quality:**
@@ -109,6 +115,43 @@ bundle exec overcommit --sign
 bundle exec overcommit --run
 ```
 
+## Batch Operations
+
+**Batch Statement Support:** Atomic execution of multiple INSERT, UPDATE, and DELETE operations with consistency guarantees.
+
+**Basic Usage:**
+```ruby
+# Create a batch
+batch = session.batch(:logged)  # :logged, :unlogged, or :counter
+
+# Add statements
+batch.add("INSERT INTO users (id, name) VALUES (?, ?)", [uuid, 'John'])
+batch.add("UPDATE users SET active = true WHERE id = ?", [uuid])
+
+# Execute atomically
+result = batch.execute
+```
+
+**Fluent Interface:**
+```ruby
+# Method chaining
+session.batch(:unlogged)
+  .statement("INSERT INTO users (id, name) VALUES (?, ?)", uuid, 'John')
+  .statement("UPDATE profiles SET last_login = now() WHERE user_id = ?", uuid)
+  .with_consistency(CassandraCpp::CONSISTENCY_QUORUM)
+  .execute
+```
+
+**Batch Types:**
+- **LOGGED** (default): Provides atomicity guarantee using batch log
+- **UNLOGGED**: Better performance but no atomicity across partitions
+- **COUNTER**: Specialized for counter column operations
+
+**Performance Notes:**
+- Use UNLOGGED batches for better performance when atomicity isn't required
+- Batch operations on the same partition for optimal performance  
+- Avoid large batches (>100 statements) to prevent timeouts
+
 ## Architecture Deep Dive
 
 ### ORM Layer (ActiveRecord-inspired)
@@ -125,6 +168,7 @@ bundle exec overcommit --run
 - **Load Balancing**: Token-aware routing with DC awareness  
 - **Retry Policies**: Configurable retry strategies
 - **Prepared Statements**: Automatic query preparation for performance
+- **Batch Operations**: Atomic multi-statement execution with consistency control
 
 ### Type System
 - **Native Types**: Direct C++ type mapping for performance
@@ -134,7 +178,7 @@ bundle exec overcommit --run
 
 ### Query Builder
 - **CQL Generation**: Builds optimized CQL from Ruby DSL
-- **Batch Operations**: Atomic multi-statement execution
+- **Batch Operations**: Atomic multi-statement execution with fluent interface
 - **Streaming**: Large result set handling with cursors
 - **Async Operations**: Non-blocking query execution
 
