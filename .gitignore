@@ -1,0 +1,57 @@
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Temporary files
+tmp/
+*.tmp
+
+# Ruby gem files
+*.gem
+.bundle/
+vendor/bundle/
+Gemfile.lock
+.ruby-version
+.ruby-gemset
+
+# C++ extension build artifacts
+ext/cassandra_cpp/*.o
+ext/cassandra_cpp/*.so
+ext/cassandra_cpp/*.bundle
+ext/cassandra_cpp/Makefile
+ext/cassandra_cpp/mkmf.log
+lib/cassandra_cpp.so
+lib/cassandra_cpp.bundle
+
+# Test and coverage files
+coverage/
+.coverage
+spec/reports/
+.rspec_status
+
+# Documentation
+doc/
+.yardoc/
+.yard/
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Docker volumes and data
+data/
+logs/
+
+# Configuration files with secrets
+config/database.yml
+config/secrets.yml
+.env
+.env.local

@@ -1,0 +1,245 @@
+version: '3.8'
+
+services:
+  # Cassandra Node 1 (Seed Node)
+  cassandra-1:
+    image: cassandra:4.1
+    container_name: cassandra-node-1
+    hostname: cassandra-1
+    networks:
+      - cassandra-net
+    ports:
+      - "9042:9042"
+      - "9160:9160"
+      - "7000:7000"
+      - "7001:7001"
+      - "7199:7199"
+    volumes:
+      - cassandra-1-data:/var/lib/cassandra
+      - ./docker/cassandra/init:/docker-entrypoint-initdb.d
+    environment:
+      - CASSANDRA_SEEDS=cassandra-1,cassandra-2
+      - CASSANDRA_CLUSTER_NAME=CassandraCppCluster
+      - CASSANDRA_ENDPOINT_SNITCH=GossipingPropertyFileSnitch
+      - CASSANDRA_DC=datacenter1
+      - CASSANDRA_RACK=rack1
+      - CASSANDRA_START_RPC=true
+      - CASSANDRA_RPC_ADDRESS=0.0.0.0
+      - CASSANDRA_LISTEN_ADDRESS=cassandra-1
+      - CASSANDRA_BROADCAST_ADDRESS=cassandra-1
+      - CASSANDRA_BROADCAST_RPC_ADDRESS=cassandra-1
+      - CASSANDRA_NUM_TOKENS=256
+      - MAX_HEAP_SIZE=512m
+      - HEAP_NEWSIZE=100m
+    healthcheck:
+      test: ["CMD-SHELL", "cqlsh -e 'describe keyspaces'"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    ulimits:
+      memlock: -1
+      nproc: 32768
+      nofile: 100000
+
+  # Cassandra Node 2
+  cassandra-2:
+    image: cassandra:4.1
+    container_name: cassandra-node-2
+    hostname: cassandra-2
+    networks:
+      - cassandra-net
+    ports:
+      - "9043:9042"
+      - "9161:9160"
+      - "7002:7000"
+      - "7003:7001"
+      - "7200:7199"
+    volumes:
+      - cassandra-2-data:/var/lib/cassandra
+    environment:
+      - CASSANDRA_SEEDS=cassandra-1,cassandra-2
+      - CASSANDRA_CLUSTER_NAME=CassandraCppCluster
+      - CASSANDRA_ENDPOINT_SNITCH=GossipingPropertyFileSnitch
+      - CASSANDRA_DC=datacenter1
+      - CASSANDRA_RACK=rack2
+      - CASSANDRA_START_RPC=true
+      - CASSANDRA_RPC_ADDRESS=0.0.0.0
+      - CASSANDRA_LISTEN_ADDRESS=cassandra-2
+      - CASSANDRA_BROADCAST_ADDRESS=cassandra-2
+      - CASSANDRA_BROADCAST_RPC_ADDRESS=cassandra-2
+      - CASSANDRA_NUM_TOKENS=256
+      - MAX_HEAP_SIZE=512m
+      - HEAP_NEWSIZE=100m
+    depends_on:
+      cassandra-1:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "cqlsh -e 'describe keyspaces'"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    ulimits:
+      memlock: -1
+      nproc: 32768
+      nofile: 100000
+
+  # Development Environment - Complete container-based setup
+  cassandra-cpp-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+      args:
+        RUBY_VERSION: "3.4.1"
+        CPP_DRIVER_VERSION: "2.16.2"
+    container_name: cassandra-cpp-dev
+    volumes:
+      - .:/workspace
+      - gem-cache:/usr/local/bundle
+      - cpp-driver-cache:/opt/cpp-driver
+      - tmp-workspace:/workspace/tmp
+    working_dir: /workspace
+    networks:
+      - cassandra-net
+    depends_on:
+      cassandra-1:
+        condition: service_healthy
+      cassandra-2:
+        condition: service_healthy
+    environment:
+      - CASSANDRA_HOSTS=cassandra-1,cassandra-2
+      - CASSANDRA_PORT=9042
+      - CASSANDRA_KEYSPACE=cassandra_cpp_development
+      - RUBY_ENV=development
+      - BUNDLE_PATH=/usr/local/bundle
+      - GEM_HOME=/usr/local/bundle
+      - PATH=/usr/local/bundle/bin:$PATH
+      - CPP_DRIVER_VERSION=2.17.1
+    ports:
+      - "3000:3000"   # For development servers
+      - "8080:8080"   # For debug/development tools
+      - "4000:4000"   # For documentation servers
+    stdin_open: true
+    tty: true
+    command: >
+      /bin/bash -c "
+      echo '🚀 Starting Cassandra-CPP Development Environment...' &&
+      echo '📦 Installing Ruby gems...' &&
+      bundle install &&
+      echo '🔧 Building C++ extension...' &&
+      cd ext/cassandra_cpp && ruby extconf.rb && make && cd /workspace &&
+      echo '✅ Development environment ready!' &&
+      echo '💡 Run bin/setup to initialize everything' &&
+      echo '🧪 POCs should be created in /workspace/tmp/' &&
+      /bin/bash
+      "
+
+  # Testing Environment
+  cassandra-cpp-test:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: cassandra-cpp-test
+    volumes:
+      - .:/workspace
+      - gem-cache:/usr/local/bundle
+    working_dir: /workspace
+    networks:
+      - cassandra-net
+    depends_on:
+      cassandra-1:
+        condition: service_healthy
+      cassandra-2:
+        condition: service_healthy
+    environment:
+      - CASSANDRA_HOSTS=cassandra-1,cassandra-2
+      - CASSANDRA_PORT=9042
+      - CASSANDRA_KEYSPACE=cassandra_cpp_test
+      - RUBY_ENV=test
+      - BUNDLE_PATH=/usr/local/bundle
+    profiles:
+      - test
+
+  # Redis for caching (optional)
+  redis:
+    image: redis:7-alpine
+    container_name: cassandra-cpp-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - cassandra-net
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    profiles:
+      - cache
+
+  # Prometheus for monitoring (optional)
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: cassandra-cpp-prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - cassandra-net
+    volumes:
+      - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    profiles:
+      - monitoring
+
+  # Grafana for visualization (optional)
+  grafana:
+    image: grafana/grafana:latest
+    container_name: cassandra-cpp-grafana
+    ports:
+      - "3000:3000"
+    networks:
+      - cassandra-net
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./docker/grafana/provisioning:/etc/grafana/provisioning
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    profiles:
+      - monitoring
+
+networks:
+  cassandra-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.22.0.0/16
+
+volumes:
+  cassandra-1-data:
+    driver: local
+  cassandra-2-data:
+    driver: local
+  gem-cache:
+    driver: local
+  node-modules:
+    driver: local
+  cpp-driver-cache:
+    driver: local
+  tmp-workspace:
+    driver: local
+  redis-data:
+    driver: local
+  prometheus-data:
+    driver: local
+  grafana-data:
+    driver: local

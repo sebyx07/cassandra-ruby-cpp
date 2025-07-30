@@ -1,0 +1,221 @@
+# Overcommit configuration for Cassandra-CPP
+# See https://github.com/sds/overcommit for documentation
+
+CommitMsg:
+  CapitalizedSubject:
+    enabled: true
+    description: 'Check subject capitalization'
+
+  EmptyMessage:
+    enabled: true
+    description: 'Check for empty commit message'
+
+  GerritChangeId:
+    enabled: false
+
+  HardTabs:
+    enabled: true
+    description: 'Check for hard tabs in commit message'
+
+  RussianNovel:
+    enabled: true
+    description: 'Check for long commit messages'
+    max_subject_length: 72
+    max_body_line_length: 80
+
+  SingleLineSubject:
+    enabled: true
+    description: 'Check for single line subject'
+
+  SpellCheck:
+    enabled: false  # Enable if you have aspell installed
+
+  TextWidth:
+    enabled: true
+    description: 'Check text width of commit message'
+    max_subject_length: 72
+    max_body_line_length: 80
+
+  TrailingPeriod:
+    enabled: true
+    description: 'Check for trailing period in subject'
+
+PreCommit:
+  AuthorEmail:
+    enabled: true
+    description: 'Check author email format'
+    pattern: '.+@.+'
+
+  AuthorName:
+    enabled: true
+    description: 'Check for author name'
+
+  BrokenSymlinks:
+    enabled: true
+    description: 'Check for broken symlinks'
+
+  CaseConflicts:
+    enabled: true
+    description: 'Check for case conflicts'
+
+  ExecutePermissions:
+    enabled: true
+    description: 'Check for proper execute permissions'
+    exclude:
+      - 'bin/**/*'
+      - 'scripts/**/*'
+
+  FixMe:
+    enabled: true
+    keywords: ['FIXME', 'XXX']
+    description: 'Check for FIXME/XXX comments'
+
+  HardTabs:
+    enabled: true
+    description: 'Check for hard tabs'
+    exclude:
+      - '**/*.go'
+      - '**/Makefile'
+      - '**/*.mk'
+
+  LocalPathsInGemfile:
+    enabled: true
+    description: 'Check for local paths in Gemfile'
+
+  MergeConflicts:
+    enabled: true
+    description: 'Check for merge conflict markers'
+
+  RuboCop:
+    enabled: true
+    description: 'Analyze with RuboCop'
+    required_executable: 'bundle'
+    command: ['bundle', 'exec', 'rubocop']
+    include: '**/*.rb'
+    exclude:
+      - 'vendor/**/*'
+      - 'sorbet/**/*'
+      - 'tmp/**/*'
+
+  Sorbet:
+    enabled: true
+    description: 'Type check with Sorbet'
+    required_executable: 'bundle'
+    command: ['bundle', 'exec', 'srb', 'tc', '--quiet']
+    include: '**/*.rb'
+    exclude:
+      - 'vendor/**/*'
+      - 'spec/**/*rbi'
+
+  YamlSyntax:
+    enabled: true
+    description: 'Check YAML syntax'
+    include: '**/*.yml'
+
+  JsonSyntax:
+    enabled: true
+    description: 'Check JSON syntax'
+    include: '**/*.json'
+
+  # Custom hooks for Cassandra-CPP
+
+  # Check that version is updated in relevant files
+  LocalHooks:
+    version_consistency:
+      enabled: true
+      description: 'Check version consistency across files'
+      required_executable: 'ruby'
+      command: ['ruby', 'scripts/check_version_consistency.rb']
+      include:
+        - 'lib/cassandra_cpp/version.rb'
+        - 'cassandra-cpp.gemspec'
+
+    # Ensure tests pass before commit
+    test_suite:
+      enabled: false  # Enable manually with --run-all
+      description: 'Run test suite'
+      required_executable: 'bundle'
+      command: ['bundle', 'exec', 'rspec', '--fail-fast']
+
+    # Check for secrets in code
+    secrets_check:
+      enabled: true
+      description: 'Check for potential secrets'
+      required_executable: 'ruby'
+      command: ['ruby', 'scripts/check_secrets.rb']
+
+    # Validate documentation
+    documentation_check:
+      enabled: false  # Enable for documentation changes
+      description: 'Validate documentation'
+      required_executable: 'bundle'
+      command: ['bundle', 'exec', 'yard', 'stats', '--list-undoc']
+
+PrePush:
+  RSpec:
+    enabled: true
+    description: 'Run RSpec test suite'
+    required_executable: 'bundle'
+    command: ['bundle', 'exec', 'rspec']
+
+  ProtectedBranches:
+    enabled: true
+    description: 'Check for commits to protected branches'
+    branches: ['main', 'master']
+
+  LocalHooks:
+    # Run full test suite before push
+    full_test_suite:
+      enabled: true
+      description: 'Run full test suite including integration tests'
+      required_executable: 'bundle'
+      command: ['bundle', 'exec', 'rspec', 'spec/']
+
+    # Performance regression check
+    performance_check:
+      enabled: false  # Enable for performance-critical changes
+      description: 'Check for performance regressions'
+      required_executable: 'bundle'
+      command: ['bundle', 'exec', 'rake', 'benchmark:regression']
+
+PreRebase:
+  MergedFiles:
+    enabled: true
+    description: 'Check that you are not rebasing commits with existing merges'
+
+PostCheckout:
+  IndexTags:
+    enabled: true
+    description: 'Generate ctags index'
+    required_executable: 'ctags'
+
+  BundleInstall:
+    enabled: true
+    description: 'Install Bundler dependencies'
+    include: 'Gemfile.lock'
+
+PostCommit:
+  IndexTags:
+    enabled: true
+    description: 'Generate ctags index'
+    required_executable: 'ctags'
+
+PostMerge:
+  BundleInstall:
+    enabled: true
+    description: 'Install Bundler dependencies'
+    include: 'Gemfile.lock'
+
+  YarnInstall:
+    enabled: false  # Enable if using Yarn
+
+PostRewrite:
+  BundleInstall:
+    enabled: true
+    description: 'Install Bundler dependencies'
+    include: 'Gemfile.lock'
+
+  IndexTags:
+    enabled: true
+    description: 'Generate ctags index'
+    required_executable: 'ctags'
