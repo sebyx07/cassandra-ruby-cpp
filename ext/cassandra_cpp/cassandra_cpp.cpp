@@ -14,6 +14,7 @@ extern "C" void Init_cassandra_cpp() {
     init_prepared_statement();
     init_statement();
     init_batch();
+    init_future();
     
     // Constants for consistency levels
     rb_define_const(rb_cCassandraCpp, "CONSISTENCY_ANY", INT2NUM(CASS_CONSISTENCY_ANY));

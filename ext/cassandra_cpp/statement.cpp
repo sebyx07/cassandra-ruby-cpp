@@ -353,9 +353,30 @@ static VALUE statement_execute(VALUE self) {
     return rows;
 }
 
+static VALUE statement_execute_async(VALUE self) {
+    statement_wrapper_t* statement_wrapper;
+    TypedData_Get_Struct(self, statement_wrapper_t, &statement_type, statement_wrapper);
+    
+    // Get session from prepared statement
+    VALUE prepared_statement = rb_iv_get(self, "@prepared_statement");
+    VALUE session = rb_iv_get(prepared_statement, "@session");
+    
+    session_wrapper_t* session_wrapper;
+    TypedData_Get_Struct(session, session_wrapper_t, &session_type, session_wrapper);
+    
+    // Execute statement asynchronously
+    CassFuture* future = cass_session_execute(session_wrapper->session, statement_wrapper->statement);
+    
+    // Create Ruby Future object
+    VALUE future_obj = create_future_from_cass_future(future, session, FUTURE_TYPE_EXECUTE);
+    
+    return future_obj;
+}
+
 void init_statement() {
     rb_cStatement = rb_define_class_under(rb_cCassandraCpp, "NativeStatement", rb_cObject);
     rb_undef_alloc_func(rb_cStatement);
     rb_define_method(rb_cStatement, "bind", (VALUE(*)(...))statement_bind_by_index, -1);
     rb_define_method(rb_cStatement, "execute", (VALUE(*)(...))statement_execute, 0);
+    rb_define_method(rb_cStatement, "execute_async", (VALUE(*)(...))statement_execute_async, 0);
 }

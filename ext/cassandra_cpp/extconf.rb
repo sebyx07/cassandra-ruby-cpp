@@ -49,7 +49,8 @@ $srcs = [
   "session.cpp",
   "prepared_statement.cpp",
   "statement.cpp",
-  "batch.cpp"
+  "batch.cpp",
+  "future.cpp"
 ]
 
 # Create the Makefile

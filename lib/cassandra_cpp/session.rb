@@ -50,23 +50,44 @@ module CassandraCpp
       Batch.new(native_batch, self)
     end
 
-    public
-
+    # Execute query asynchronously
+    # @param query [String] CQL query to execute
+    # @param params [Array] Parameters for prepared statements
+    # @return [Future] Future object for async result handling
     def execute_async(query, *params)
-      # For now, return a simple future-like object
-      # In the real implementation, this would use C++ async capabilities
-      future = Future.new
-      
-      Thread.new do
-        begin
-          result = execute(query, *params)
-          future.set_result(result)
-        rescue StandardError => e
-          future.set_error(e)
+      begin
+        if params.empty?
+          # Simple query without parameters - use native async
+          native_future = @native_session.execute_async(query)
+          Future.new(native_future)
+        else
+          # Use prepared statement for parameterized queries
+          statement = prepare(query)
+          statement.execute_async(*params)
         end
+      rescue CassandraCpp::Error => e
+        raise e
+      rescue StandardError => e
+        raise QueryError, "Async query failed: #{e.message}"
       end
-      
-      future
+    end
+
+    # Prepare statement asynchronously
+    # @param query [String] CQL query to prepare
+    # @return [Future] Future object that will contain PreparedStatement
+    def prepare_async(query)
+      begin
+        native_future = @native_session.prepare_async(query)
+        
+        # Create a mapped future that converts the result to PreparedStatement
+        Future.new(native_future).map do |native_prepared|
+          PreparedStatement.new(native_prepared, query)
+        end
+      rescue CassandraCpp::Error => e
+        raise e
+      rescue StandardError => e
+        raise QueryError, "Async prepare failed: #{e.message}"
+      end
     end
 
     def keyspace
@@ -75,48 +96,6 @@ module CassandraCpp
 
     def close
       @native_session&.close
-    end
-
-    # Simple future implementation for POC
-    class Future
-      def initialize
-        @result = nil
-        @error = nil
-        @completed = false
-        @mutex = Mutex.new
-        @condition = ConditionVariable.new
-      end
-
-      def get(timeout = nil)
-        @mutex.synchronize do
-          unless @completed
-            @condition.wait(@mutex, timeout)
-          end
-          
-          raise @error if @error
-          @result
-        end
-      end
-
-      def set_result(result)
-        @mutex.synchronize do
-          @result = result
-          @completed = true
-          @condition.broadcast
-        end
-      end
-
-      def set_error(error)
-        @mutex.synchronize do
-          @error = error
-          @completed = true
-          @condition.broadcast
-        end
-      end
-
-      def completed?
-        @completed
-      end
     end
   end
 end

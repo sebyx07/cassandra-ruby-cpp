@@ -151,11 +151,51 @@ static VALUE session_batch(int argc, VALUE* argv, VALUE self) {
     return batch_obj;
 }
 
+// Async execution method - returns a Future object
+static VALUE session_execute_async(VALUE self, VALUE query_str) {
+    session_wrapper_t* wrapper;
+    TypedData_Get_Struct(self, session_wrapper_t, &session_type, wrapper);
+    
+    const char* query = StringValueCStr(query_str);
+    
+    // Create statement
+    CassStatement* statement = cass_statement_new(query, 0);
+    
+    // Execute query asynchronously
+    CassFuture* future = cass_session_execute(wrapper->session, statement);
+    
+    // Clean up statement (future holds reference to it)
+    cass_statement_free(statement);
+    
+    // Create Ruby Future object
+    VALUE future_obj = create_future_from_cass_future(future, self, FUTURE_TYPE_EXECUTE);
+    
+    return future_obj;
+}
+
+// Async prepare method - returns a Future object
+static VALUE session_prepare_async(VALUE self, VALUE query_str) {
+    session_wrapper_t* wrapper;
+    TypedData_Get_Struct(self, session_wrapper_t, &session_type, wrapper);
+    
+    const char* query = StringValueCStr(query_str);
+    
+    // Prepare statement asynchronously
+    CassFuture* future = cass_session_prepare(wrapper->session, query);
+    
+    // Create Ruby Future object
+    VALUE future_obj = create_future_from_cass_future(future, self, FUTURE_TYPE_PREPARE);
+    
+    return future_obj;
+}
+
 void init_session() {
     rb_cSession = rb_define_class_under(rb_cCassandraCpp, "NativeSession", rb_cObject);
     rb_undef_alloc_func(rb_cSession);
     rb_define_method(rb_cSession, "execute", (VALUE(*)(...))session_execute, 1);
+    rb_define_method(rb_cSession, "execute_async", (VALUE(*)(...))session_execute_async, 1);
     rb_define_method(rb_cSession, "close", (VALUE(*)(...))session_close, 0);
     rb_define_method(rb_cSession, "prepare", (VALUE(*)(...))session_prepare, 1);
+    rb_define_method(rb_cSession, "prepare_async", (VALUE(*)(...))session_prepare_async, 1);
     rb_define_method(rb_cSession, "batch", (VALUE(*)(...))session_batch, -1);
 }

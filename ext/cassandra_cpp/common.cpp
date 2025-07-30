@@ -8,6 +8,7 @@ VALUE rb_cSession;
 VALUE rb_cPreparedStatement;
 VALUE rb_cStatement;
 VALUE rb_cBatch;
+VALUE rb_cFuture;
 VALUE rb_eCassandraError;
 
 // Helper function to raise Cassandra errors

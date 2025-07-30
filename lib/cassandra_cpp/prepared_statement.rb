@@ -46,6 +46,29 @@ module CassandraCpp
       rows = statement.execute
       Result.new(rows)
     end
+
+    # Execute the prepared statement asynchronously with the given parameters
+    #
+    # @param args [Array] The parameters to bind to the statement
+    # @return [Future] Future object for async result handling
+    # @raise [CassandraCpp::Error] if parameter count doesn't match or execution fails
+    def execute_async(*args)
+      validate_parameter_count(args.length)
+      
+      # Create a bound statement
+      statement = @native_prepared.bind
+      
+      # Bind parameters
+      args.each_with_index do |value, index|
+        statement.bind(index, value)
+      end
+      
+      # Execute asynchronously and wrap in Future
+      native_future = statement.execute_async
+      
+      # Create a mapped future that converts result rows to Result object
+      Future.new(native_future).map { |rows| Result.new(rows) }
+    end
     
     # Execute the prepared statement with named parameters
     # This is a convenience method that will be implemented in the future
