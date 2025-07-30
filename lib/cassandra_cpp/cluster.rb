@@ -9,8 +9,16 @@ module CassandraCpp
 
     def initialize(config = {})
       @config = default_config.merge(config)
+      @connection_pool = config[:connection_pool] || ConnectionPool.new
       @native_cluster = nil
       validate_config!
+    end
+    
+    # Configure with specific connection pool settings
+    # @param pool [ConnectionPool] Connection pool configuration
+    # @return [Cluster] New cluster instance with the connection pool
+    def self.with_connection_pool(pool, config = {})
+      new(config.merge(connection_pool: pool))
     end
 
     def connect(keyspace = nil)
@@ -27,16 +35,16 @@ module CassandraCpp
 
     def connect_native(keyspace = nil)
       begin
-        # Use native C++ implementation
+        # Use native C++ implementation with connection pool configuration
         options = {
           hosts: @config[:hosts].join(','),
           port: @config[:port],
           consistency: CONSISTENCY_QUORUM
-        }
+        }.merge(@connection_pool.to_native_config)
         
         @native_cluster ||= NativeCluster.new(options)
         session = @native_cluster.connect(keyspace)
-        Session.new(session, self)
+        Session.new(session, self, keyspace)
       rescue CassandraCpp::Error => e
         raise ConnectionError, "Connection failed: #{e.message}"
       end
@@ -56,6 +64,26 @@ module CassandraCpp
         @native_cluster.close
       end
       @native_cluster = nil
+    end
+    
+    # Get connection pool statistics and configuration
+    # @return [Hash] Connection pool stats and configuration
+    def connection_pool_stats
+      @connection_pool.stats.merge(
+        cluster_config: {
+          hosts: @config[:hosts],
+          port: @config[:port],
+          keyspace: @config[:keyspace]
+        }
+      )
+    end
+    
+    # Update connection pool configuration (creates new cluster instance)
+    # @param new_pool_config [Hash] New connection pool configuration
+    # @return [Cluster] New cluster instance with updated connection pool
+    def with_connection_pool_config(new_pool_config)
+      new_pool = @connection_pool.with(new_pool_config)
+      self.class.new(@config.merge(connection_pool: new_pool))
     end
 
     private

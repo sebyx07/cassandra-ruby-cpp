@@ -124,7 +124,7 @@ RSpec.describe 'Native Extension Integration', type: :integration do
       
       with_test_session('native_test') do |session|
         # Create test table
-        session.execute("""
+        session.execute(<<~CQL)
           CREATE TABLE IF NOT EXISTS type_test (
             id UUID PRIMARY KEY,
             text_val TEXT,
@@ -132,13 +132,13 @@ RSpec.describe 'Native Extension Integration', type: :integration do
             bigint_val BIGINT,
             bool_val BOOLEAN
           )
-        """)
+        CQL
 
         # Insert test data
-        session.execute("""
+        session.execute(<<~CQL)
           INSERT INTO type_test (id, text_val, int_val, bigint_val, bool_val)
           VALUES (uuid(), 'test_string', 42, 1234567890, true)
-        """)
+        CQL
 
         # Query and verify types
         result = session.execute('SELECT * FROM type_test LIMIT 1')

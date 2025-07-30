@@ -64,7 +64,6 @@ RSpec.describe 'Advanced Data Types', type: :integration do
     end
     
     it 'handles various time formats' do
-      id = SecureRandom.uuid
       times = [
         Time.at(0),                    # Unix epoch
         Time.at(1640995200),          # 2022-01-01 00:00:00 UTC
@@ -316,7 +315,6 @@ RSpec.describe 'Advanced Data Types', type: :integration do
       
       # Create medium-sized collections
       large_list = (1..1000).map { |i| "item_#{i}" }
-      large_set = Set.new((1..1000).to_a)
       large_map = (1..100).to_h { |i| ["key_#{i}", i * 10] }
       
       statement = session.prepare(<<~CQL)
