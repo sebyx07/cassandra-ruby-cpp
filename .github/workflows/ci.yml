@@ -2,12 +2,9 @@ name: Continuous Integration
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main ]
   pull_request:
-    branches: [ main, develop ]
-  schedule:
-    # Run daily at 2 AM UTC
-    - cron: '0 2 * * *'
+    branches: [ main ]
 
 env:
   RUBY_VERSION: 3.4.1
@@ -47,7 +44,7 @@ jobs:
 
     services:
       cassandra:
-        image: cassandra:${{ env.CASSANDRA_VERSION }}
+        image: cassandra:4.1
         env:
           CASSANDRA_CLUSTER_NAME: TestCluster
           CASSANDRA_NUM_TOKENS: 256
