@@ -29,6 +29,7 @@ lib/cassandra_cpp.bundle
 coverage/
 .coverage
 spec/reports/
+spec/examples.txt
 .rspec_status
 
 # Documentation
